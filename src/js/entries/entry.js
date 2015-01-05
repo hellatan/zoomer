@@ -14,14 +14,25 @@ var fabric = require('fabric').fabric;
 var imageRatio = require('modules/imageRatio');
 
 var $win = $(global);
-var canvas = new fabric.Canvas('zoom', {
-    width: $(window).width(),
-    height: $(window).height()
-});
 var winW;
 var winH;
 var maxW = $win.width();
 var maxH = $win.height();
+var $canvasContainer = $('.canvas-wrapper');
+var containerW = $canvasContainer.width();
+var containerH = $canvasContainer.height();
+var leftStart = containerW;
+
+console.log('containerH: ', containerH);
+console.log('containerW: ', containerW);
+var canvas = new fabric.Canvas('zoom', {
+    width: containerW,
+    height: containerH
+});
+
+maxW = containerW;
+maxH = containerH;
+
 var $img = $('.main-img > img');
 var imgElement = $img[0];
 var origH = $img.height();
@@ -37,7 +48,7 @@ var rectInstance = new fabric.Rect({
     opacity: 0.5,
     height: 40,
     width: 300,
-    left: ($win.width() / 2) - 150,
+    left: (leftStart / 2) - 150,
     hasControls: false,
     hasBorders: false,
     hoverCursor: 'cursor',
@@ -51,7 +62,7 @@ var sliderBar = new fabric.Rect({
     height: 4,
     width: 294,
     top: maxH - 50 + 3,
-    left: ($win.width() / 2) - 150 + 3,
+    left: (leftStart / 2) - 150 + 3,
     hasControls: false,
     hasBorders: false,
     hoverCursor: 'cursor',
@@ -65,7 +76,7 @@ var zoomHandler = new fabric.Circle({
     opacity: 0.7,
     radius: 15,
     top: zoomHandlerTop,
-    left: ($win.width() / 2) - (sliderBar.width / 2) + 15,
+    left: (leftStart / 2) - (sliderBar.width / 2) + 15,
     hasControls: false,
     hasBorders: false,
     lockMovementY: true,
@@ -73,7 +84,7 @@ var zoomHandler = new fabric.Circle({
 });
 
 var imgInstance = new fabric.Image(imgElement, {
-    left: ($win.width() / 2) - (imgW / 2),
+    left: (leftStart / 2) - (imgW / 2),
     top: 0,
     hasControls: false,
     centeredScaling: true,
@@ -86,16 +97,7 @@ var imgInstance = new fabric.Image(imgElement, {
 });
 
 var incrementer = sliderBar.width / 100;
-var scaleInterval;
 var prevLeft;
-
-/*
-
-    start: 1:1, center of the zoomHandler
-    shrink: 1:(1 * x),
-    zoom: 1:(1 * x)
-
- */
 
 imgInstance.on('moving', function (e) {
     // restricts image from moving too far left/right/up/down
@@ -182,6 +184,7 @@ zoomHandler.on('moving', function (e) {
 });
 
 canvas.on("mouse:up", function(e) {
+    console.log('mouse up target: ', e.target)
     var left = zoomHandler.left;
     var leftBound = sliderBar.left;
     var rightBound = leftBound + sliderBar.width;
@@ -189,19 +192,17 @@ canvas.on("mouse:up", function(e) {
 
     var xBounds = Math.min(Math.max(left, leftBound - zoomHandlerCenterX), rightBound - zoomHandlerCenterX);
 
-    if (left >= xBounds && left <= xBounds) {
+    if (left >= xBounds && left <= xBounds && (e.target && !e.target._element)) {
         if (imgInstance.width) {
             console.log('imgInstance.width: ', imgInstance.width)
             console.log('imgInstance.height: ', imgInstance.height)
             var newLeft = left / 100;
             var newScale = newLeft / incrementer;
-            console.log('left: ', left)
-            console.log('originalZoomHandlerCenter: ', originalZoomHandlerCenter)
-            console.log('new scael: ', newScale)
             imgInstance.animate('scaleY', newScale, {
                 onChange: canvas.renderAll.bind(canvas),
                 easing: fabric.util.ease.easeOutQuad
             });
+            canvas.renderAll();
             imgInstance.animate('scaleX', newScale, {
                 onChange: canvas.renderAll.bind(canvas),
                 easing: fabric.util.ease.easeOutQuad
@@ -212,34 +213,25 @@ canvas.on("mouse:up", function(e) {
     prevLeft = zoomHandler.left;
 });
 
+var scaleControl = $('.scale-control');
+scaleControl.onchange = function() {
+    imgInstance.scale(parseFloat(this.value)).setCoords();
+    canvas.renderAll();
+};
+
 module.exports = {
     init: function () {
         rectInstance.set({
-            top: maxH - 50 // rectInstance.height
+            top: maxH - 50
         });
         imgInstance.set({
             scaleY: imgH / origH,
             scaleX: imgW / origW
         });
-        canvas.add(imgInstance, rectInstance, sliderBar, zoomHandler);
-        canvas.bringToFront(rectInstance);
+        canvas.add(imgInstance, sliderBar, zoomHandler);
         canvas.bringToFront(sliderBar);
         canvas.bringToFront(zoomHandler);
         originalZoomHandlerCenter = zoomHandler.getCenterPoint();
-        console.log('og zoom: ', originalZoomHandlerCenter);
-
-
-        var imageWidth = imgInstance.getWidth();
-        var imageHeight = imgInstance.getHeight();
-
-        console.log('imageWidth: ', imageWidth);
-        console.log('imageHeight: ', imageHeight);
-
-        if (initScaleH !== 1 || initScaleW !== 1) {
-            zoomHandler.set({
-                left: 0
-            })
-        }
 
         winW = $(window).width();
         winH = $(window).height();
