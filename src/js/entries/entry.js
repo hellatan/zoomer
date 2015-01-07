@@ -108,10 +108,10 @@ imgInstance.on('moving', function (e) {
 
     var imgWidth = imgInstance.getWidth();
     var imgHeight = imgInstance.getHeight();
-    var maxLeft = $(window).width() - imgWidth;
-    var maxRight = $(window).width() + imgWidth;
-    var maxTop = $(window).height() - imgHeight;
-    var maxBottom = $(window).height() + imgHeight;
+    var maxLeft = $canvasContainer.width() - imgWidth;
+    var maxRight = $canvasContainer.width() + imgWidth;
+    var maxTop = $canvasContainer.height() - imgHeight;
+    var maxBottom = $canvasContainer.height() + imgHeight;
 
     console.log('left: ', maxLeft, ' :: ', left);
     console.log('right: ', maxRight, ' :: ', right);
@@ -224,10 +224,25 @@ module.exports = {
         rectInstance.set({
             top: maxH - 50
         });
+
+
+
         imgInstance.set({
             scaleY: imgH / origH,
-            scaleX: imgW / origW
+            scaleX: imgW / origW,
+            originX: 'center',
+            originY: 'center'
         });
+
+        var imgCenterX = imgInstance.getWidth();
+        var imgCenterY = imgInstance.getHeight();
+
+        imgInstance.set({
+            left: imgCenterX,
+            top: imgCenterY / 2
+        })
+
+
         canvas.add(imgInstance, sliderBar, zoomHandler);
         canvas.bringToFront(sliderBar);
         canvas.bringToFront(zoomHandler);
